@@ -1,0 +1,133 @@
+<?php
+session_start(); // Pastikan session dimulai
+include "../koneksi.php";
+
+// Redirect jika belum login
+if (!isset($_SESSION['user_id'])|| ($_SESSION['level_akses'] !== 'Admin')) {
+    header("Location: ../index.php");
+    exit;
+}
+
+// penenganan hapus data 
+if(isset($_GET['delete_id'])) {
+    $id_penerbit = $_GET['delete_id'];
+        $query_delete = "DELETE FROM tb_penerbit WHERE id_penerbit = '$id_penerbit'";
+        if(mysqli_query($conn, $query_delete)) {
+            
+            echo "<script>alert('Penerbit berhasil dihapus!');</script>";
+        } else {
+            echo "<script>alert('Gagal menghapus Kategori!');</script>";
+        }
+    }
+
+// Menangani data POST
+if (isset($_POST['SIMPAN'])) {
+    $nama_penerbit =$_POST['nama_penerbit'];
+   
+            $query = "INSERT INTO tb_penerbit (nama_penerbit) values ('$nama_penerbit')";
+            if(mysqli_query($conn, $query)) {
+                echo "Penerbit Baru Berhasil Disimpan";
+                header("location:" .$_SERVER['PHP_SELF']);
+                exit();
+            }else{
+                echo "Error:" .mysqli_error($conn);
+            }
+    }
+
+$datapenerbit="SELECT * FROM tb_penerbit ORDER BY id_penerbit DESC";
+$resultpenerbit = $conn->query($datapenerbit);
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <?php include "title.php"; ?>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
+
+    <style>
+        /* CSS untuk tampilan mobile-only */
+        @media (max-width: 767px) {
+            .mobile-only {
+                display: block;
+            }
+
+            .desktop-only {
+                display: none;
+            }
+        }
+
+        /* CSS untuk tampilan desktop-only */
+        @media (min-width: 768px) {
+            .mobile-only {
+                display: none;
+            }
+
+            .desktop-only {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body  class="d-flex flex-column h-100">
+    <?php include 'header.php'; ?>
+    <?php include 'menu.php'; ?>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <?php include 'sidebar.php'; ?>
+            <!-- Content -->
+            <div class="col-md-9">
+            <h4 class="text-center" >Manajemen Penerbit</h1>
+        <form action="" method="POST">
+            <div class="form-group">
+                <label for="nama_penerbit">Nama Penerbit</label>
+                <input type="text" class="form-control" name="nama_penerbit" placeholder="Input Nama Penerbit" required>
+            </div>
+            <br>
+            <div class="form-group">
+            <input type="submit" class="btn btn-primary" name="SIMPAN" value="Simpan">
+            </div>
+        </from>
+        
+        <br><hr><br>
+
+        <h4 class="text-center" >Data Penerbit</h1>
+                <div class="table-responsive">
+                    <table id="myTable" class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Penerbit</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $no = 1;
+                            while ($penebit = $resultpenerbit->fetch_assoc()) {
+                                echo '<tr>';
+                                echo '<td>' . $no++ . '</td>';
+                                echo '<td>' . $penebit['nama_penerbit'] . '</td>';
+                                echo '<td>';
+                                            echo '<a href="edit-penerbit.php?id_penerbit=' . $penebit['id_penerbit'] . '" class="btn btn-primary">Edit</a> &nbsp';
+                                            echo '<a href="?delete_id=' . $penebit['id_penerbit'] . '" class="btn btn-danger btn-sm" onclick="return confirm(\'Apakah Anda yakin ingin menghapus Kategori ini?\')">Hapus</a> &nbsp;';
+                                echo '</td>';
+                                echo '</tr>';
+                            }
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<?php include 'footer.php'; ?>
+
+    
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" />
+</body>
+</html>
