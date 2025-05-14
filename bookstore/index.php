@@ -8,29 +8,11 @@ $is_logged_in = isset($_SESSION['user_id']);
 
 // Jika user sudah login, cek level aksesnya
 if ($is_logged_in && (!isset($_SESSION['level_akses']) || $_SESSION['level_akses'] !== 'Customer')) {
-    // Debugging akses
     echo "Akses ditolak. Anda bukan Customer";
     exit();
 }
 
-
-$where_clause = "";
-$buku_list = []; // Ini baris yang ditambahkan
-
-if (isset($_GET['kategori'])) {
-    $kategori_id = mysqli_real_escape_string($conn, $_GET['kategori']);
-    $where_clause = "WHERE tb_buku.id_kategori = $kategori_id";
-}
-
-// Ambil semua produk buku dari database dengan filter kategori (jika ada)
-$query_buku = "SELECT * FROM tb_buku $where_clause";
-$result_buku = mysqli_query($conn, $query_buku);
-
-while ($row_buku = mysqli_fetch_assoc($result_buku)) {
-    $buku_list[] = $row_buku;
-}
-
-// Ambil semua kategori dari database
+// Query untuk kategori
 $query_kategori = "SELECT * FROM tb_kategori";
 $result_kategori = mysqli_query($conn, $query_kategori);
 
@@ -39,22 +21,28 @@ while ($row_kategori = mysqli_fetch_assoc($result_kategori)) {
     $kategori_list[] = $row_kategori;
 }
 
-// Query untuk menampilkan data buku dengan kategori dan penerbit
+// Query buku dengan kategori
+$where_clause = "";
+if (isset($_GET['kategori'])) {
+    $kategori_id = mysqli_real_escape_string($conn, $_GET['kategori']);
+    $where_clause = "WHERE b.id_kategori = $kategori_id";
+}
+
+// Query untuk buku
 $query = "SELECT b.id_buku, k.nama_kategori, b.judul_buku, b.pengarang,
         p.nama_penerbit, b.tahun, b.harga, b.foto, b.stok 
         FROM tb_buku b 
-        JOIN 
-            tb_kategori k ON b.id_kategori = k.id_kategori 
-        JOIN 
-            tb_penerbit p ON b.id_penerbit = p.id_penerbit";
+        JOIN tb_kategori k ON b.id_kategori = k.id_kategori 
+        JOIN tb_penerbit p ON b.id_penerbit = p.id_penerbit
+        $where_clause";
 
-    // untuk search produk
-    $keyword = isset($_GET['keyword']) ? $_GET['keyword'] : '';
-    if (!empty($keyword)) {
-        $query .= " WHERE judul_buku LIKE '%$keyword%' OR nama_kategori LIKE '%$keyword%' OR nama_penerbit LIKE '%$keyword%'";
-    }
+// Filter search
+$keyword = isset($_GET['keyword']) ? mysqli_real_escape_string($conn, $_GET['keyword']) : '';
+if (!empty($keyword)) {
+    $query .= (empty($where_clause) ? " WHERE " : " AND ") . " (b.judul_buku LIKE '%$keyword%' OR k.nama_kategori LIKE '%$keyword%' OR p.nama_penerbit LIKE '%$keyword%')";
+}
 
-    $result = mysqli_query($conn, $query);
+$result = mysqli_query($conn, $query);
 
 ?>
 
